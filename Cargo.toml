@@ -1,5 +1,6 @@
 [package]
 name = "nrich"
+description = "Quickly enrich IPs with information about their open ports/ vulnerabilities/ software."
 version = "0.1.0"
 edition = "2021"
 authors = ["Shodan"]
