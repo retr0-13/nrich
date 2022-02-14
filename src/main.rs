@@ -3,14 +3,12 @@ use futures::future;
 use futures::{stream, StreamExt};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use serde_json;
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::net::IpAddr;
 use structopt::StructOpt;
-use tokio;
 
 const CONCURRENCY: usize = 10;
 const EXIT_ERROR_CODE: i32 = 1;
@@ -94,9 +92,9 @@ async fn main() {
                     if !host.hostnames.is_empty() {
                         print!(" ({})", host.hostnames.join(", "));
                     }
-                    print!("\n");
+                    println!();
 
-                    if host.ports.len() > 0 {
+                    if !host.ports.is_empty() {
                         println!(
                             "  Ports: {}",
                             host.ports
@@ -106,7 +104,7 @@ async fn main() {
                                 .join(", ")
                         );
                     }
-                    if host.tags.len() > 0 {
+                    if !host.tags.is_empty() {
                         println!(
                             "  Tags: {}",
                             host.tags
@@ -116,7 +114,7 @@ async fn main() {
                                 .join(", ")
                         );
                     }
-                    if host.cpes.len() > 0 {
+                    if !host.cpes.is_empty() {
                         println!(
                             "  CPEs: {}",
                             host.cpes
@@ -126,7 +124,7 @@ async fn main() {
                                 .join(", ")
                         );
                     }
-                    if host.vulns.len() > 0 {
+                    if !host.vulns.is_empty() {
                         println!(
                             "  Vulnerabilities: {}",
                             host.vulns
@@ -137,7 +135,7 @@ async fn main() {
                         );
                     }
 
-                    print!("\n");
+                    println!();
                 }
             }
         })
