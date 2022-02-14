@@ -17,10 +17,15 @@ $ wget https://gitlab.com/api/v4/projects/33695681/packages/generic/nrich/latest
 $ sudo dpkg -i nrich_latest_amd64.deb
 ```
 
-To confirm that it's working you can pipe an IP to the command:
+To confirm that it's working you can pipe an IP to the command. For example:
 
 ```shell
-echo 1.1.1.1 | nrich -
+$ echo 149.202.182.140 | nrich -
+149.202.182.140 (ftptech1.pcsoft.fr)
+  Ports: 21, 80, 111, 443
+  CPEs: cpe:/a:proftpd:proftpd:1.3.5b, cpe:/a:apache:http_server:2.4.25
+  Vulnerabilities: CVE-2018-11763, CVE-2019-0220, CVE-2017-15710, CVE-2018-1312, CVE-2019-0197, CVE-2017-9798, CVE-2018-1283, CVE-2017-7668, CVE-2017-3169, CVE-2017-15715, CVE-2017-7659, CVE-2018-1333, CVE-2019-0211, CVE-2019-12815, CVE-2017-3167, CVE-2017-9788, CVE-2019-0196, CVE-2017-7679, CVE-2018-17199
+
 ```
 
 ## Usage
