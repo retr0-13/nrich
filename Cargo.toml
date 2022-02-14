@@ -2,6 +2,11 @@
 name = "nrich"
 version = "0.1.0"
 edition = "2021"
+authors = ["Shodan"]
+readme = "README.md"
+license = "GPL-3.0-or-later"
+homepage = "https://gitlab.com/shodan-public/nrich"
+repository = "https://gitlab.com/shodan-public/nrich"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -13,3 +18,20 @@ serde = { version = "1.0.136", features = ["derive"] }
 serde_json = "1.0.79"
 structopt = "0.3.26"
 tokio = { version = "1.16.1", features = ["macros", "rt-multi-thread"] }
+
+[features]
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "z"
+panic = "abort"
+
+[package.metadata.rpm]
+package = "nrich"
+
+[package.metadata.rpm.cargo]
+buildflags = ["--release"]
+
+[package.metadata.rpm.targets]
+nrich = { path = "/usr/bin/nrich" }
