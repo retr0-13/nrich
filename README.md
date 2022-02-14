@@ -45,3 +45,7 @@ OPTIONS:
 ARGS:
     <filename>    File containing an IP per line. Non-IPs are ignored
 ```
+
+Here is a short video that shows how to install ``nrich`` and then run it against a list of emerging threats:
+
+[![asciicast](https://asciinema.org/a/468923.svg)](https://asciinema.org/a/468923)
