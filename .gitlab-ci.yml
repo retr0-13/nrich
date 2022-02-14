@@ -1,0 +1,92 @@
+stages:
+  - build
+  - upload
+  - release
+
+variables:
+  PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/nrich/${CI_COMMIT_TAG}"
+  PACKAGE_LATEST_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/nrich/latest"
+
+build_rust_cross:
+    stage: build
+    image: docker:git
+    services:
+      - docker:dind
+    script:
+      - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+      - docker build -t registry.gitlab.com/${CI_PROJECT_NAMESPACE}/nrich/rust-cross:latest .
+      - docker push registry.gitlab.com/${CI_PROJECT_NAMESPACE}/nrich/rust-cross:latest
+    when: manual  # this pipeline takes time and not often need to rebuild
+
+build:
+  stage: build
+  image: registry.gitlab.com/${CI_PROJECT_NAMESPACE}/geonet-rs/rust-cross:latest
+  script:
+    - apt update
+    - apt install -y upx-ucl rpm
+    - cargo install cargo-deb cargo-rpm
+    - cargo build --release
+    - cargo build --target x86_64-pc-windows-gnu --release
+    - CC=o64-clang cargo build --target x86_64-apple-darwin --release
+    - mkdir bin
+    - strip target/release/nrich
+    - upx target/release/nrich
+    - mv target/release/nrich bin/nrich-${CI_COMMIT_TAG}-linux-amd64
+    - mv target/x86_64-pc-windows-gnu/release/nrich.exe bin/nrich-${CI_COMMIT_TAG}-windows-amd64.exe
+    - mv target/x86_64-apple-darwin/release/nrich bin/nrich-${CI_COMMIT_TAG}-darwin-amd64   # upx on Linux failed to compress darwin file
+    - cargo deb
+    - mv target/debian/nrich*.deb bin/nrich_${CI_COMMIT_TAG}_amd64.deb
+    - cargo rpm build
+    - mv target/release/rpmbuild/RPMS/x86_64/nrich*.rpm bin/nrich_${CI_COMMIT_TAG}_amd64.rpm
+  cache:
+    paths:
+      - target/release/
+  artifacts:
+    paths:
+      - bin
+  rules:
+    - if: $CI_COMMIT_TAG
+
+upload:
+  stage: upload
+  image: curlimages/curl:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - |
+        curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file bin/nrich-${CI_COMMIT_TAG}-linux-amd64 ${PACKAGE_REGISTRY_URL}/nrich-linux-amd64
+        curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file bin/nrich-${CI_COMMIT_TAG}-windows-amd64.exe ${PACKAGE_REGISTRY_URL}/nrich-windows-amd64.exe
+        curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file bin/nrich-${CI_COMMIT_TAG}-darwin-amd64 ${PACKAGE_REGISTRY_URL}/nrich-darwin-amd64
+        curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file bin/nrich_${CI_COMMIT_TAG}_amd64.deb ${PACKAGE_REGISTRY_URL}/nrich_${CI_COMMIT_TAG}_amd64.deb
+        curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file bin/nrich_${CI_COMMIT_TAG}_amd64.rpm ${PACKAGE_REGISTRY_URL}/nrich_${CI_COMMIT_TAG}_amd64.rpm
+        curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file bin/nrich-${CI_COMMIT_TAG}-linux-amd64 ${PACKAGE_LATEST_REGISTRY_URL}/nrich-linux-amd64
+        curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file bin/nrich-${CI_COMMIT_TAG}-windows-amd64.exe ${PACKAGE_LATEST_REGISTRY_URL}/nrich-windows-amd64.exe
+        curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file bin/nrich-${CI_COMMIT_TAG}-darwin-amd64 ${PACKAGE_LATEST_REGISTRY_URL}/nrich-darwin-amd64
+        curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file bin/nrich_${CI_COMMIT_TAG}_amd64.deb ${PACKAGE_LATEST_REGISTRY_URL}/nrich_latest_amd64.deb
+        curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file bin/nrich_${CI_COMMIT_TAG}_amd64.rpm ${PACKAGE_LATEST_REGISTRY_URL}/nrich_latest_amd64.rpm
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+  release:
+    name: "Release $CI_COMMIT_TAG"
+    description: '$DESCRIPTION'
+    tag_name: '$CI_COMMIT_TAG'
+    ref: '$CI_COMMIT_TAG'
+    assets:
+      links:
+        - name: 'nrich-linux-amd64'
+          url: "$PACKAGE_REGISTRY_URL/nrich-linux-amd64"
+        - name: 'nrich-windows-amd64.exe'
+          url: "$PACKAGE_REGISTRY_URL/nrich-windows-amd64.exe"
+        - name: 'nrich-darwin-amd64'
+          url: "$PACKAGE_REGISTRY_URL/nrich-darwin-amd64"
+        - name: "nrich_${CI_COMMIT_TAG}_amd64.deb"
+          url: "$PACKAGE_REGISTRY_URL/nrich_${CI_COMMIT_TAG}_amd64.deb"
+        - name: "nrich_${CI_COMMIT_TAG}_amd64.rpm"
+          url: "$PACKAGE_REGISTRY_URL/nrich_${CI_COMMIT_TAG}_amd64.rpm"
+  script:
+    - echo "Creating a release for $CI_COMMIT_TAG"
+  
