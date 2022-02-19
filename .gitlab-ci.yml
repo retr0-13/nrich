@@ -20,7 +20,7 @@ build_rust_cross:
 
 build:
   stage: build
-  image: registry.gitlab.com/${CI_PROJECT_NAMESPACE}/geonet-rs/rust-cross:latest
+  image: registry.gitlab.com/shodan-public/geonet-rs/rust-cross:latest
   script:
     - apt update
     - apt install -y upx-ucl rpm
