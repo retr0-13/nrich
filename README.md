@@ -8,6 +8,10 @@ A command-line tool to quickly analyze all IPs in a file and see which ones have
 <a href="https://twitter.com/shodanhq"><img src="https://img.shields.io/twitter/follow/shodanhq.svg?logo=twitter"></a>
 </p>
 
+![Sample Output](output-sample.png)
+
+``nrich`` fetches information via the [InternetDB API](https://internetdb.shodan.io) and the vulnerability assessment technique is [documented in the help center](https://help.shodan.io/mastery/vulnerability-assessment).
+
 ## Installation
 
 Grab the [latest release](https://gitlab.com/shodan-public/nrich/-/releases) for your operating system. For example, to install the ``nrich`` command in Ubuntu:
