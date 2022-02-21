@@ -10,9 +10,6 @@ use std::io::BufReader;
 use std::net::IpAddr;
 use structopt::StructOpt;
 
-#[cfg(windows)]
-use colored::control::set_virtual_terminal;
-
 const CONCURRENCY: usize = 10;
 const EXIT_ERROR_CODE: i32 = 1;
 
@@ -81,7 +78,7 @@ async fn main() {
 
     // On Windows we need to enable the virtual terminal so colors show up
     #[cfg(windows)]
-    colored::control::set_virtual_terminal(true);
+    let _ = colored::control::set_virtual_terminal(true);
 
     ip_lookups
         .for_each(|result| async {
