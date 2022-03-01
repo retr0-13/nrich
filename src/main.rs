@@ -1,7 +1,8 @@
 use colored::Colorize;
 use futures::future;
 use futures::{stream, StreamExt};
-use reqwest::Client;
+use reqwest::header;
+use reqwest::{Client, Proxy};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io;
@@ -33,6 +34,10 @@ struct Cli {
     #[structopt(default_value = "shell", short, long)]
     output: String,
 
+    /// Proxy URI (HTTP, HTTPS or SOCKS)
+    #[structopt(default_value = "", short, long)]
+    proxy: String,
+
     /// File containing an IP per line. Non-IPs are ignored.
     filename: String,
 }
@@ -53,7 +58,37 @@ async fn main() {
         }
     };
     let reader = BufReader::new(input);
-    let client = Client::new();
+
+    // Create the HTTP client that we're using for all the requests to internetdb.shodan.io
+    // Use the Brotli encoding
+    let mut headers = header::HeaderMap::new();
+    headers.insert("accept-encoding", header::HeaderValue::from_static("br"));
+
+    let mut client_builder = Client::builder()
+        .user_agent("nrich")
+        .default_headers(headers)
+        .brotli(true);
+
+    if !args.proxy.is_empty() {
+        let proxy = match Proxy::all(args.proxy) {
+            Ok(proxy) => proxy,
+            Err(e) => {
+                println!("{}: {}", "Error".red(), e);
+                std::process::exit(EXIT_ERROR_CODE);
+            }
+        };
+        client_builder = client_builder
+            .proxy(proxy)
+            .danger_accept_invalid_certs(true); // We disable certificate validation to allow for self-signed certs
+    }
+
+    let client = match client_builder.build() {
+        Ok(client) => client,
+        Err(e) => {
+            println!("{}: {}", "Error".red(), e);
+            std::process::exit(EXIT_ERROR_CODE);
+        }
+    };
 
     let ip_lookups = stream::iter(reader.lines())
         // We only care about IP addresses
