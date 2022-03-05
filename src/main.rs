@@ -27,7 +27,7 @@ struct Host {
 #[derive(Debug, StructOpt)]
 #[structopt(name = "nrich", about = "Add network information to IPs")]
 struct Cli {
-    /// Output format (shell or json)
+    /// Output format (shell, ndjson, json)
     #[structopt(default_value = "shell", short, long)]
     output: String,
 
@@ -115,12 +115,20 @@ async fn main() {
     #[cfg(windows)]
     let _ = colored::control::set_virtual_terminal(true);
 
+    // For JSON output we need to have an opening bracket and a closing bracket (see below)
+    if args.output == "json" {
+        println!("[");
+    }
+
     ip_lookups
         .for_each(|result| async {
             // We got some information from InternetDB
             if let Ok(host) = result {
-                if args.output == "json" {
+                if args.output == "ndjson" {
+                    // Newline Delimited JSON
                     println!("{}", serde_json::to_string(&host).unwrap());
+                } else if args.output == "json" {
+                    println!("{},", serde_json::to_string(&host).unwrap());
                 } else {
                     // Terminal output should look something like this
                     //
@@ -179,4 +187,11 @@ async fn main() {
             }
         })
         .await;
+
+    if args.output == "json" {
+        // The current output ends in a "," so we need to add an empty JSON object
+        // before we close the array otherwise it won't be valid JSON.
+        println!("{{}}");
+        println!("]");
+    }
 }
